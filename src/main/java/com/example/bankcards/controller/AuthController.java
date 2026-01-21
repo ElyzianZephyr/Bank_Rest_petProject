@@ -4,7 +4,7 @@ package com.example.bankcards.controller;
 
 import com.example.bankcards.dto.requests.AuthRequestDto;
 import com.example.bankcards.dto.response.AuthResponseDto;
-import com.example.bankcards.service.AuthService;
+import com.example.bankcards.service.interfaces.AuthService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;

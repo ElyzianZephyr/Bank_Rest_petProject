@@ -3,7 +3,7 @@ package com.example.bankcards.controller;
 
 import com.example.bankcards.dto.requests.TransferRequestDto;
 import com.example.bankcards.dto.response.CardResponseDto;
-import com.example.bankcards.service.CardService;
+import com.example.bankcards.service.interfaces.CardService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;

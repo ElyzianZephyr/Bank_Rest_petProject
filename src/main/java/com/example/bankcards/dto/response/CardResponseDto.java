@@ -1,5 +1,7 @@
 package com.example.bankcards.dto.response;
 
+import com.example.bankcards.entity.enums.CardStatus;
+
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
@@ -7,6 +9,6 @@ public record CardResponseDto(
    Long id,
    String maskCardNumber,
    BigDecimal balance,
-   String status,
+   CardStatus status,
    LocalDate validityDate
 ) {}

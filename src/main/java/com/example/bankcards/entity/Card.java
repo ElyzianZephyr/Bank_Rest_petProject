@@ -29,7 +29,7 @@ public class Card {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
-    private CardStatus status; //
+    private CardStatus status;  //'ACTIVE', 'BLOCKED', 'EXPIRED'
 
     @Column(name = "validity_date", nullable = false)
     private LocalDate validityDate;

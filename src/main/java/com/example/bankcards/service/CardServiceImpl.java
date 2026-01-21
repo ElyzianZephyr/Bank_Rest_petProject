@@ -1,16 +1,17 @@
-package com.example.bankcards.service.impl;
+package com.example.bankcards.service;
 
+import com.example.bankcards.dto.requests.CreateCardRequestDto;
 import com.example.bankcards.dto.requests.TransferRequestDto;
 import com.example.bankcards.dto.response.CardResponseDto;
 import com.example.bankcards.entity.Card;
 import com.example.bankcards.entity.Client;
 import com.example.bankcards.entity.enums.CardStatus;
-import com.example.bankcards.exception.AppSecurityException;
 import com.example.bankcards.exception.CardNotFoundException;
 import com.example.bankcards.exception.InsufficientFundsException;
 import com.example.bankcards.exception.RestException;
 import com.example.bankcards.repository.CardRepository;
-import com.example.bankcards.service.CardService;
+import com.example.bankcards.repository.ClientRepository;
+import com.example.bankcards.service.interfaces.CardService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -18,92 +19,141 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
-import java.util.Objects;
+import java.util.Random;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class CardServiceImpl implements CardService {
 
     private final CardRepository cardRepository;
+    private final ClientRepository clientRepository;
+    private final Random random = new Random();
 
     @Override
     @Transactional(readOnly = true)
     public List<CardResponseDto> getMyCards() {
-        Client principal = (Client) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        return cardRepository.findAllByOwnerId(principal.getId())
-                .stream()
-                .map(this::mapToDto)
-                .toList();
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        Client client = clientRepository.findByUsername(username)
+                .orElseThrow(() -> new RestException("User not found", HttpStatus.NOT_FOUND));
+
+        return cardRepository.findAllByOwnerId(client.getId()).stream()
+                .map(this::toCardResponseDto)
+                .collect(Collectors.toList());
     }
 
     @Override
-    @Transactional // Ensures atomicity: both updates succeed, or neither does.
+    @Transactional
     public void transfer(TransferRequestDto request) {
-        // 0. Prevent transfer to the same card
-        if (request.sourceCardId().equals(request.targetCardId())) {
-            throw new RestException("Cannot transfer to the same card", HttpStatus.BAD_REQUEST);
-        }
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
 
-        // 1. Get authenticated user
-        Client principal = (Client) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-
-        // 2. Fetch Cards
-        // Note: We fetch entities to manage them in the persistence context.
+        // 1. Fetch Source Card and validate ownership
         Card sourceCard = cardRepository.findById(request.sourceCardId())
                 .orElseThrow(() -> new CardNotFoundException("Source card not found"));
 
+        if (!sourceCard.getOwner().getUsername().equals(username)) {
+            throw new RestException("You can only transfer funds from your own cards", HttpStatus.FORBIDDEN);
+        }
+
+        if (sourceCard.getStatus().equals(CardStatus.BLOCKED.name()) ||
+                sourceCard.getStatus().equals(CardStatus.EXPIRED.name())) {
+            throw new RestException("Source card is not active", HttpStatus.BAD_REQUEST);
+        }
+
+        // 2. Fetch Target Card
         Card targetCard = cardRepository.findById(request.targetCardId())
                 .orElseThrow(() -> new CardNotFoundException("Target card not found"));
 
-        // 3. Validate Ownership
-        // Security Rule: User can only spend money from THEIR OWN card.
-        // (Assuming target card can be anyone's, but if requirements say "between my cards", add check for target too)
-        if (!Objects.equals(sourceCard.getOwner().getId(), principal.getId())) {
-            throw new AppSecurityException("You do not own the source card");
+        if (targetCard.getStatus().equals(CardStatus.BLOCKED.name()) ||
+                targetCard.getStatus().equals(CardStatus.EXPIRED.name())) {
+            throw new RestException("Target card is not active", HttpStatus.BAD_REQUEST);
         }
 
-        // Per controller description "Transfer money between two cards owned by the user", we validate target too:
-        if (!Objects.equals(targetCard.getOwner().getId(), principal.getId())) {
-            throw new AppSecurityException("Target card does not belong to you");
-        }
-
-        // 4. Validate Status
-        if (sourceCard.getStatus() != CardStatus.ACTIVE) {
-            throw new RestException("Source card is not ACTIVE", HttpStatus.BAD_REQUEST);
-        }
-        if (targetCard.getStatus() != CardStatus.ACTIVE) {
-            throw new RestException("Target card is not ACTIVE", HttpStatus.BAD_REQUEST);
-        }
-
-        // 5. Validate Balance
+        // 3. Validate Balance
         if (sourceCard.getBalance().compareTo(request.amount()) < 0) {
-            throw new InsufficientFundsException("Insufficient funds on source card");
+            throw new InsufficientFundsException("Insufficient funds");
         }
 
-        // 6. Execute Transfer
-        // Optimistic locking (@Version in Entity) will automatically check for concurrent modifications here.
+        // 4. Execute Transfer
         sourceCard.setBalance(sourceCard.getBalance().subtract(request.amount()));
         targetCard.setBalance(targetCard.getBalance().add(request.amount()));
 
-        // 7. Save
         cardRepository.save(sourceCard);
         cardRepository.save(targetCard);
     }
 
-    // ... Helper methods (mapToDto, maskCardNumber) from previous step ...
-    private CardResponseDto mapToDto(Card card) {
+    @Override
+    @Transactional
+    public CardResponseDto createCard(CreateCardRequestDto request) {
+        Client owner = clientRepository.findById(request.userId())
+                .orElseThrow(() -> new RestException("User with ID " + request.userId() + " not found", HttpStatus.NOT_FOUND));
+
+        Card card = new Card();
+        card.setCardNumber(generateRandomCardNumber());
+        card.setOwner(owner);
+        card.setBalance(request.initialBalance() != null ? request.initialBalance() : BigDecimal.ZERO);
+        card.setStatus(CardStatus.ACTIVE);
+        card.setValidityDate(LocalDate.now().plusYears(3));
+
+        Card savedCard = cardRepository.save(card);
+        return toCardResponseDto(savedCard);
+    }
+
+    @Override
+    @Transactional
+    public CardResponseDto updateCardStatus(Long cardId, CardStatus status) {
+        Card card = cardRepository.findById(cardId)
+                .orElseThrow(() -> new CardNotFoundException("Card with ID " + cardId + " not found"));
+
+        card.setStatus(status);
+        Card updatedCard = cardRepository.save(card);
+        return toCardResponseDto(updatedCard);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<CardResponseDto> getAllCards() {
+        return cardRepository.findAll().stream()
+                .map(this::toCardResponseDto)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public CardResponseDto getCardById(Long cardId) {
+        Card card = cardRepository.findById(cardId)
+                .orElseThrow(() -> new CardNotFoundException("Card not found"));
+        return toCardResponseDto(card);
+    }
+
+    // --- Helper Methods ---
+
+    private CardResponseDto toCardResponseDto(Card card) {
         return new CardResponseDto(
                 card.getId(),
                 maskCardNumber(card.getCardNumber()),
                 card.getBalance(),
-                card.getStatus().name(),
+                card.getStatus(),
                 card.getValidityDate()
         );
     }
 
-    private String maskCardNumber(String cardNumber) {
-        if (cardNumber == null || cardNumber.length() < 4) return "****";
-        return "**** **** **** " + cardNumber.substring(cardNumber.length() - 4);
+
+    // TODO
+    private String generateRandomCardNumber() {
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < 16; i++) {
+            sb.append(random.nextInt(10));
+        }
+        return sb.toString();
+    }
+
+    private String maskCardNumber(String clearCardNumber) {
+        if (clearCardNumber == null || clearCardNumber.length() < 4) {
+            return "****";
+        }
+        return "**** **** **** " + clearCardNumber.substring(clearCardNumber.length() - 4);
     }
 }
