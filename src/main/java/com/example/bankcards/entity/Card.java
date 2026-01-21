@@ -1,5 +1,6 @@
 package com.example.bankcards.entity;
 
+import com.example.bankcards.entity.enums.CardStatus;
 import com.example.bankcards.security.CardNumberAttributeConverter;
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -19,7 +20,6 @@ public class Card {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-
     @Convert(converter = CardNumberAttributeConverter.class)
     @Column(name = "card_number", nullable = false, length = 512)
     private String cardNumber;
@@ -27,18 +27,18 @@ public class Card {
     @Column(nullable = false, precision = 19, scale = 2)
     private BigDecimal balance = BigDecimal.ZERO;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
-    private String status; // ACTIVE, BLOCKED, EXPIRED
+    private CardStatus status; //
 
     @Column(name = "validity_date", nullable = false)
     private LocalDate validityDate;
 
-    // Optimistic Locking: Automatically incremented by JPA on update
+    // Optimistic Locking
     @Version
-    private Long version;
-
+    private Long version; //
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "owner_id", nullable = false)
-    private Client owner;
+    private Client owner; //
 }
