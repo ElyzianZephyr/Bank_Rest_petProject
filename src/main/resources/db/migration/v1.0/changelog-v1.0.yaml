@@ -1,0 +1,5 @@
+databaseChangeLog:
+  - include:
+      file: db/migration/v1.0/001-create-cards-table.sql
+  - include:
+      file: db/migration/v1.0/002-create-clients-table.sql

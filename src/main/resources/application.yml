@@ -1,0 +1,40 @@
+spring:
+  application:
+    name: bank-rest-api
+  
+  datasource:
+    url: jdbc:postgresql://localhost:5432/bankdb
+    username: bankuser
+    password: bankpassword
+    driver-class-name: org.postgresql.Driver
+  
+  jpa:
+    open-in-view: false
+    show-sql: true
+    hibernate:
+      ddl-auto: validate # We use Liquibase for DDL
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+  
+  liquibase:
+    change-log: classpath:db/migration/v1_init_schema.sql
+    enabled: true
+
+# Security Configuration
+app:
+  security:
+    # 32-byte (256-bit) AES Key in Base64. 
+    # Generated for dev: echo -n "12345678901234567890123456789012" | base64
+    encryption-key: MTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTI=
+    jwt:
+      secret: 404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970
+      expiration-ms: 86400000 # 1 day
+
+# Swagger UI Config
+springdoc:
+  api-docs:
+    path: /docs/openapi.yaml
+  swagger-ui:
+    path: /swagger-ui.html
