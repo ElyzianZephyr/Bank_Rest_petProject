@@ -30,6 +30,9 @@ public class Client implements UserDetails { //
     @Column(nullable = false)
     private String password;
 
+    @Column(name = "is_locked", nullable = false)
+    private boolean isLocked = false;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 32)
     private Role role; //
@@ -52,7 +55,7 @@ public class Client implements UserDetails { //
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return Collections.singletonList(role); // Role implements GrantedAuthority
+        return Collections.singletonList(role);
     }
 
     @Override
@@ -62,8 +65,9 @@ public class Client implements UserDetails { //
 
     @Override
     public boolean isAccountNonLocked() {
-        return true;
+        return !isLocked;
     }
+
 
     @Override
     public boolean isCredentialsNonExpired() {

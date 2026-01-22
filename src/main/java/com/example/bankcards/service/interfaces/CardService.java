@@ -47,4 +47,10 @@ public interface CardService {
      * @return The card details.
      */
     CardResponseDto getCardById(Long cardId);
+
+    /**
+     * Deletes a card from the database.
+     * @param cardId The ID of the card to delete.
+     */
+    void deleteCard(Long cardId);
 }

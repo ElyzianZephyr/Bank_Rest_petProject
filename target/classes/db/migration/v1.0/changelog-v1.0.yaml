@@ -3,3 +3,5 @@ databaseChangeLog:
       file: db/migration/v1.0/001-create-clients-table.sql
   - include:
       file: db/migration/v1.0/002-create-cards-table.sql
+  - include:
+      file: db/migration/v1.0/003-alter-clients-add-status.sql

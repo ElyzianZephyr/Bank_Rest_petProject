@@ -68,4 +68,15 @@ public class AdminCardController {
             @Valid @RequestBody UpdateCardStatusRequestDto request) {
         return ResponseEntity.ok(cardService.updateCardStatus(cardId, request.status()));
     }
+
+    @DeleteMapping("/{cardId}")
+    @Operation(summary = "Delete Card", description = "Delete a specific card by its ID.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Card deleted successfully"),
+            @ApiResponse(responseCode = "404", description = "Card not found")
+    })
+    public ResponseEntity<Void> deleteCard(@PathVariable Long cardId) {
+        cardService.deleteCard(cardId);
+        return ResponseEntity.ok().build();
+    }
 }

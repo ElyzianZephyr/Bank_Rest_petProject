@@ -128,6 +128,15 @@ public class CardServiceImpl implements CardService {
         return toCardResponseDto(card);
     }
 
+    @Override
+    @Transactional
+    public void deleteCard(Long cardId) {
+        if (!cardRepository.existsById(cardId)) {
+            throw new CardNotFoundException("Card with ID " + cardId + " not found");
+        }
+        cardRepository.deleteById(cardId);
+    }
+
     // --- Helper Methods ---
 
     private CardResponseDto toCardResponseDto(Card card) {
