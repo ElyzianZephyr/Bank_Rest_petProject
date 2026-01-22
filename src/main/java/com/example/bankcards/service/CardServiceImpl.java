@@ -3,9 +3,11 @@ package com.example.bankcards.service;
 import com.example.bankcards.dto.requests.CreateCardRequestDto;
 import com.example.bankcards.dto.requests.TransferRequestDto;
 import com.example.bankcards.dto.response.CardResponseDto;
+import com.example.bankcards.dto.response.PageResponseDto;
 import com.example.bankcards.entity.Card;
 import com.example.bankcards.entity.Client;
 import com.example.bankcards.entity.enums.CardStatus;
+import com.example.bankcards.exception.AppSecurityException;
 import com.example.bankcards.exception.CardNotFoundException;
 import com.example.bankcards.exception.InsufficientFundsException;
 import com.example.bankcards.exception.RestException;
@@ -13,10 +15,14 @@ import com.example.bankcards.repository.CardRepository;
 import com.example.bankcards.repository.ClientRepository;
 import com.example.bankcards.service.interfaces.CardService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -34,14 +40,49 @@ public class CardServiceImpl implements CardService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<CardResponseDto> getMyCards() {
+    public PageResponseDto<CardResponseDto> getMyCards(int page, int size, String query) {
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
         Client client = clientRepository.findByUsername(username)
                 .orElseThrow(() -> new RestException("User not found", HttpStatus.NOT_FOUND));
 
-        return cardRepository.findAllByOwnerId(client.getId()).stream()
+        Pageable pageable = PageRequest.of(page, size);
+        Page<Card> cardPage;
+
+        if (StringUtils.hasText(query)) {
+            // Note: Partial search on encrypted data usually requires a blind index.
+            // This relies on the method signature added in Step 1.
+            cardPage = cardRepository.findAllByOwnerIdAndCardNumberContaining(client.getId(), query, pageable);
+        } else {
+            cardPage = cardRepository.findAllByOwnerId(client.getId(), pageable);
+        }
+
+        List<CardResponseDto> content = cardPage.getContent().stream()
                 .map(this::toCardResponseDto)
                 .collect(Collectors.toList());
+
+        return new PageResponseDto<>(
+                content,
+                cardPage.getNumber(),
+                cardPage.getSize(),
+                cardPage.getTotalElements(),
+                cardPage.getTotalPages()
+        );
+    }
+    @Override
+    @Transactional
+    public void blockMyCard(Long cardId) {
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+
+        Card card = cardRepository.findById(cardId)
+                .orElseThrow(() -> new CardNotFoundException("Card not found"));
+
+        // Security Check: Ensure the card belongs to the authenticated user
+        if (!card.getOwner().getUsername().equals(username)) {
+            throw new AppSecurityException("You do not have permission to block this card");
+        }
+
+        card.setStatus(CardStatus.BLOCKED);
+        cardRepository.save(card);
     }
 
     @Override

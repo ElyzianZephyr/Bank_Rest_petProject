@@ -3,17 +3,26 @@ package com.example.bankcards.service.interfaces;
 import com.example.bankcards.dto.requests.CreateCardRequestDto;
 import com.example.bankcards.dto.requests.TransferRequestDto;
 import com.example.bankcards.dto.response.CardResponseDto;
+import com.example.bankcards.dto.response.PageResponseDto;
 import com.example.bankcards.entity.enums.CardStatus;
 
 import java.util.List;
 
 public interface CardService {
     /**
-     * Retrieves all cards belonging to the current user.
-     * @return List of masked card details.
+     * Retrieves all cards belonging to the current user with pagination and optional search.
+     * @param page Page number (0-based).
+     * @param size Page size.
+     * @param query Optional search query (partial card number).
+     * @return Paginated list of masked card details.
      */
-    List<CardResponseDto> getMyCards();
+    PageResponseDto<CardResponseDto> getMyCards(int page, int size, String query);
 
+    /**
+     * Blocks a card owned by the current user.
+     * @param cardId The ID of the card to block.
+     */
+    void blockMyCard(Long cardId);
     /**
      * Executes a fund transfer between two cards.
      * @param request Transfer details (source, target, amount).
