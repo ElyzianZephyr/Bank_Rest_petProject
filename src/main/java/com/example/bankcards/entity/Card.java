@@ -34,9 +34,7 @@ public class Card {
     @Column(name = "validity_date", nullable = false)
     private LocalDate validityDate;
 
-    // Optimistic Locking
-    @Version
-    private Long version; //
+
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "owner_id", nullable = false)
