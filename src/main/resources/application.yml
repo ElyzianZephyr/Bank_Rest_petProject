@@ -34,9 +34,3 @@ app:
       secret: ${JWT_SECRET:}
       expiration-ms: 86400000 # 1 day
 
-# Swagger UI Config
-springdoc:
-  api-docs:
-    path: /docs/openapi.yaml
-  swagger-ui:
-    path: /swagger-ui.html

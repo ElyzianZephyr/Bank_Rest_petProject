@@ -98,8 +98,8 @@ public class CardServiceImpl implements CardService {
             throw new RestException("You can only transfer funds from your own cards", HttpStatus.FORBIDDEN);
         }
 
-        if (sourceCard.getStatus().equals(CardStatus.BLOCKED.name()) ||
-                sourceCard.getStatus().equals(CardStatus.EXPIRED.name())) {
+        if (sourceCard.getStatus().equals(CardStatus.BLOCKED) ||
+                sourceCard.getStatus().equals(CardStatus.EXPIRED)) {
             throw new RestException("Source card is not active", HttpStatus.BAD_REQUEST);
         }
 
@@ -107,8 +107,8 @@ public class CardServiceImpl implements CardService {
         Card targetCard = cardRepository.findById(request.targetCardId())
                 .orElseThrow(() -> new CardNotFoundException("Target card not found"));
 
-        if (targetCard.getStatus().equals(CardStatus.BLOCKED.name()) ||
-                targetCard.getStatus().equals(CardStatus.EXPIRED.name())) {
+        if (targetCard.getStatus().equals(CardStatus.BLOCKED) ||
+                targetCard.getStatus().equals(CardStatus.EXPIRED)) {
             throw new RestException("Target card is not active", HttpStatus.BAD_REQUEST);
         }
 
@@ -179,7 +179,7 @@ public class CardServiceImpl implements CardService {
     }
 
     // --- Helper Methods ---
-
+    //TODO
     private CardResponseDto toCardResponseDto(Card card) {
         return new CardResponseDto(
                 card.getId(),
