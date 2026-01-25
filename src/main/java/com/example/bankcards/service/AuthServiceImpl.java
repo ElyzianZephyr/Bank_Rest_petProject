@@ -6,8 +6,8 @@ import com.example.bankcards.entity.Client;
 import com.example.bankcards.entity.enums.Role;
 import com.example.bankcards.exception.RestException;
 import com.example.bankcards.repository.ClientRepository;
-import com.example.bankcards.security.JwtTokenProvider;
 import com.example.bankcards.service.interfaces.AuthService;
+import com.example.bankcards.util.JwtUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -25,7 +25,7 @@ public class AuthServiceImpl implements AuthService {
     private final ClientRepository clientRepository;
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
-    private final JwtTokenProvider jwtTokenProvider;
+    private final JwtUtils jwtUtils;
 
     @Override
     @Transactional
@@ -37,7 +37,7 @@ public class AuthServiceImpl implements AuthService {
         Client client = new Client();
         client.setUsername(request.username());
         client.setPassword(passwordEncoder.encode(request.password()));
-        client.setRole(Role.ROLE_USER); // Default role
+        client.setRole(Role.ROLE_USER);
 
 
         clientRepository.save(client);
@@ -59,7 +59,7 @@ public class AuthServiceImpl implements AuthService {
         SecurityContextHolder.getContext().setAuthentication(authentication);
 
 
-        String token = jwtTokenProvider.generateToken(authentication);
+        String token = jwtUtils.generateToken(authentication);
 
 
         return new AuthResponseDto(token);

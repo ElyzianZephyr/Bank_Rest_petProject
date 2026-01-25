@@ -23,7 +23,7 @@ public class UserServiceImpl implements UserService {
     @Transactional(readOnly = true)
     public List<UserResponseDto> getAllUsers() {
         return clientRepository.findAll().stream()
-                .map(this::toDto)
+                .map(UserResponseDto::from)
                 .collect(Collectors.toList());
     }
 
@@ -32,7 +32,7 @@ public class UserServiceImpl implements UserService {
     public UserResponseDto getUserById(Long id) {
         Client client = clientRepository.findById(id)
                 .orElseThrow(() -> new RestException("User not found", HttpStatus.NOT_FOUND));
-        return toDto(client);
+        return UserResponseDto.from(client);
     }
 
     @Override
@@ -51,15 +51,7 @@ public class UserServiceImpl implements UserService {
                 .orElseThrow(() -> new RestException("User not found", HttpStatus.NOT_FOUND));
 
         client.setLocked(isLocked);
-        return toDto(clientRepository.save(client));
+        return UserResponseDto.from(clientRepository.save(client));
     }
 
-    private UserResponseDto toDto(Client client) {
-        return new UserResponseDto(
-                client.getId(),
-                client.getUsername(),
-                client.getRole(),
-                client.isLocked()
-        );
-    }
 }

@@ -13,6 +13,7 @@ import com.example.bankcards.exception.InsufficientFundsException;
 import com.example.bankcards.exception.RestException;
 import com.example.bankcards.repository.CardRepository;
 import com.example.bankcards.repository.ClientRepository;
+import com.example.bankcards.service.interfaces.CardNumberGenerator;
 import com.example.bankcards.service.interfaces.CardService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -36,7 +37,7 @@ public class CardServiceImpl implements CardService {
 
     private final CardRepository cardRepository;
     private final ClientRepository clientRepository;
-    private final Random random = new Random();
+    private final CardNumberGenerator cardNumberGenerator;
 
     @Override
     @Transactional(readOnly = true)
@@ -57,7 +58,7 @@ public class CardServiceImpl implements CardService {
         }
 
         List<CardResponseDto> content = cardPage.getContent().stream()
-                .map(this::toCardResponseDto)
+                .map(CardResponseDto::from)
                 .collect(Collectors.toList());
 
         return new PageResponseDto<>(
@@ -132,14 +133,14 @@ public class CardServiceImpl implements CardService {
                 .orElseThrow(() -> new RestException("User with ID " + request.userId() + " not found", HttpStatus.NOT_FOUND));
 
         Card card = new Card();
-        card.setCardNumber(generateRandomCardNumber());
+        card.setCardNumber(cardNumberGenerator.generate());
         card.setOwner(owner);
         card.setBalance(request.initialBalance() != null ? request.initialBalance() : BigDecimal.ZERO);
         card.setStatus(CardStatus.ACTIVE);
         card.setValidityDate(LocalDate.now().plusYears(3));
 
         Card savedCard = cardRepository.save(card);
-        return toCardResponseDto(savedCard);
+        return CardResponseDto.from(savedCard);
     }
 
     @Override
@@ -150,14 +151,14 @@ public class CardServiceImpl implements CardService {
 
         card.setStatus(status);
         Card updatedCard = cardRepository.save(card);
-        return toCardResponseDto(updatedCard);
+        return CardResponseDto.from(updatedCard);
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<CardResponseDto> getAllCards() {
         return cardRepository.findAll().stream()
-                .map(this::toCardResponseDto)
+                .map(CardResponseDto::from)
                 .collect(Collectors.toList());
     }
 
@@ -166,7 +167,7 @@ public class CardServiceImpl implements CardService {
     public CardResponseDto getCardById(Long cardId) {
         Card card = cardRepository.findById(cardId)
                 .orElseThrow(() -> new CardNotFoundException("Card not found"));
-        return toCardResponseDto(card);
+        return CardResponseDto.from(card);
     }
 
     @Override
@@ -176,34 +177,5 @@ public class CardServiceImpl implements CardService {
             throw new CardNotFoundException("Card with ID " + cardId + " not found");
         }
         cardRepository.deleteById(cardId);
-    }
-
-    // --- Helper Methods ---
-    //TODO
-    private CardResponseDto toCardResponseDto(Card card) {
-        return new CardResponseDto(
-                card.getId(),
-                maskCardNumber(card.getCardNumber()),
-                card.getBalance(),
-                card.getStatus(),
-                card.getValidityDate()
-        );
-    }
-
-
-    // TODO
-    private String generateRandomCardNumber() {
-        StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < 16; i++) {
-            sb.append(random.nextInt(10));
-        }
-        return sb.toString();
-    }
-
-    private String maskCardNumber(String clearCardNumber) {
-        if (clearCardNumber == null || clearCardNumber.length() < 4) {
-            return "****";
-        }
-        return "**** **** **** " + clearCardNumber.substring(clearCardNumber.length() - 4);
     }
 }

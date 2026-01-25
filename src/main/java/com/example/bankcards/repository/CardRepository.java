@@ -4,6 +4,7 @@ import com.example.bankcards.entity.Card;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -46,4 +47,7 @@ public interface CardRepository extends JpaRepository<Card, Long> {
      * @return A page of matching cards.
      */
     Page<Card> findAllByOwnerIdAndCardNumberContaining(Long ownerId, String cardNumber, Pageable pageable);
+
+    @Query(value = "select nextval('cards_number_seq') ",nativeQuery = true)
+    Long getNextCardNumber();
 }

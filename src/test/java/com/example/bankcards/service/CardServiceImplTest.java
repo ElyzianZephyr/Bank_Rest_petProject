@@ -11,6 +11,7 @@ import com.example.bankcards.exception.InsufficientFundsException;
 import com.example.bankcards.exception.RestException;
 import com.example.bankcards.repository.CardRepository;
 import com.example.bankcards.repository.ClientRepository;
+import com.example.bankcards.service.interfaces.CardNumberGenerator;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -53,6 +54,8 @@ class CardServiceImplTest {
     @Mock private SecurityContext securityContext;
     @Mock private Authentication authentication;
 
+    @Mock private CardNumberGenerator cardNumberGenerator;
+
     @BeforeEach
     void setUp() {
         SecurityContextHolder.setContext(securityContext);
@@ -83,6 +86,7 @@ class CardServiceImplTest {
             when(clientRepository.findById(userId)).thenReturn(Optional.of(client));
             // Return the card passed to save()
             when(cardRepository.save(any(Card.class))).thenAnswer(i -> i.getArgument(0));
+            when(cardNumberGenerator.generate()).thenReturn("1111222233334444");
 
             // Act
             CardResponseDto response = cardService.createCard(request);
@@ -143,6 +147,7 @@ class CardServiceImplTest {
             card.setBalance(new BigDecimal("100.00"));
             card.setStatus(CardStatus.ACTIVE);
             card.setValidityDate(LocalDate.now().plusYears(1));
+
 
             when(cardRepository.findAllByOwnerId(eq(10L), any(Pageable.class)))
                     .thenReturn(new PageImpl<>(List.of(card)));
