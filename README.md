@@ -70,9 +70,17 @@ $env:JWT_SECRET="mySuperSecretKeyForJwtSigning12345"
 mvn spring-boot:run
 ```
 
+
+
+
 ## 📚 Документация API
 
+[Описание задачи](README_Task.md)
+
 После успешного запуска документация доступна по адресу:
+## Документация API
+
+* [Спецификация OpenAPI (Swagger)](docs/openapi.yaml) — файл для импорта в Postman или Swagger UI.
 
 * **Swagger UI:** [http://localhost:8080/swagger-ui.html](http://localhost:8080/swagger-ui.html)
 * **OpenAPI JSON:** [http://localhost:8080/v3/api-docs](http://localhost:8080/v3/api-docs)

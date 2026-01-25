@@ -10,8 +10,7 @@ class JwtUtilsTest {
 
     private JwtUtils jwtUtils;
 
-    // ИСХОДНЫЙ КЛЮЧ (32 символа = 256 бит) закодированный в Base64
-    // "12345678901234567890123456789012" в Base64 ->
+
     private static final String SECRET_KEY_BASE64 = "MTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTI=";
 
     private static final long EXPIRATION_MS = 60000; // 1 minute
@@ -63,12 +62,11 @@ class JwtUtilsTest {
     @Test
     @DisplayName("Validation: Expired token returns false")
     void validateToken_Expired_ReturnsFalse() throws InterruptedException {
-        // Создаем экземпляр с очень коротким временем жизни (10 мс)
-        // Используем тот же корректный Base64 ключ
+
         JwtUtils shortLivedJwtUtils = new JwtUtils(SECRET_KEY_BASE64, 10);
         String token = shortLivedJwtUtils.generateToken("quick_user");
 
-        // Ждем пока токен протухнет
+
         Thread.sleep(50);
 
         boolean isValid = shortLivedJwtUtils.validateToken(token);
@@ -86,21 +84,18 @@ class JwtUtilsTest {
     @Test
     @DisplayName("Security: Token signed with a different key is invalid")
     void validateToken_WrongKey_ReturnsFalse() {
-        // 1. Генерируем токен основным ключом
+
         String token = jwtUtils.generateToken("hacker");
 
-        // 2. Создаем другой экземпляр с ДРУГИМ ключом
-        // Другой ключ "98765432109876543210987654321098" закодированный в Base64 ->
+
         String differentSecretBase64 = "OTg3NjU0MzIxMDk4NzY1NDMyMTA5ODc2NTQzMjEwOTg=";
         JwtUtils otherKeyUtils = new JwtUtils(differentSecretBase64, EXPIRATION_MS);
 
-        // 3. Пытаемся валидировать токен, подписанный ключом А, с помощью ключа Б
-        // (В оригинальном коде была ошибка: вы вызывали jwtUtils.validateToken(token), а надо otherKeyUtils)
-        // Но даже если вы хотели проверить, примет ли 'jwtUtils' чужой токен (сгенерированный otherKeyUtils):
+
 
         String alienToken = otherKeyUtils.generateToken("hacker");
 
-        // jwtUtils не должен принять токен, подписанный другим ключом
+
         boolean isValid = jwtUtils.validateToken(alienToken);
 
         assertThat(isValid).isFalse();

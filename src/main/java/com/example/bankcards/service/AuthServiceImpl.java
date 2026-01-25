@@ -31,7 +31,7 @@ public class AuthServiceImpl implements AuthService {
     @Transactional
     public AuthResponseDto register(AuthRequestDto request) {
         if (clientRepository.existsByUsername(request.username())) {
-            throw new RestException("Username is already taken", HttpStatus.BAD_REQUEST);
+            throw new RestException("Username is already taken", HttpStatus.CONFLICT);
         }
 
         Client client = new Client();
