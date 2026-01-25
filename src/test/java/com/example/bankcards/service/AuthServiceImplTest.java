@@ -6,7 +6,7 @@ import com.example.bankcards.entity.Client;
 import com.example.bankcards.entity.enums.Role;
 import com.example.bankcards.exception.RestException;
 import com.example.bankcards.repository.ClientRepository;
-import com.example.bankcards.security.JwtTokenProvider;
+import com.example.bankcards.util.JwtUtils;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -36,7 +36,7 @@ class AuthServiceImplTest {
     @Mock
     private AuthenticationManager authenticationManager;
     @Mock
-    private JwtTokenProvider jwtTokenProvider;
+    private JwtUtils jwtUtils;
 
     @InjectMocks
     private AuthServiceImpl authService;
@@ -60,7 +60,7 @@ class AuthServiceImplTest {
         Authentication authentication = mock(Authentication.class);
         given(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
                 .willReturn(authentication);
-        given(jwtTokenProvider.generateToken(authentication)).willReturn(generatedToken);
+        given(jwtUtils.generateToken(authentication)).willReturn(generatedToken);
 
         // Act
         AuthResponseDto response = authService.register(request);
